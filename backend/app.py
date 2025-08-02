@@ -8,6 +8,7 @@ import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 from playsound import playsound
+from text_to_speech import get_elevenlabs_audio
 
 load_dotenv()
 app = Flask(__name__)
@@ -122,6 +123,7 @@ def analyze():
 
 @app.route("/elevenlabs", methods=["POST"])
 def elevenlabs_tts():
+    get_elevenlabs_audio("Hi, I'm evelyn, I'm a lesbian and I unironically love eclipse editor.")
     elevenlabs_audio = "elevenlabs.wav"
     playsound(elevenlabs_audio)
 
