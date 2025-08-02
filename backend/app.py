@@ -30,10 +30,35 @@ def extract_audio_features(audio_path):
 
     return {
         "energy": float(np.mean(librosa.feature.rms(y=y)[0])),
-        "zcr": float(np.mean(librosa.feature.zero_crossing_rate(y)[0])),
+        "zcr": float(np.mean(librosa.feature.zero_crossing_rate(y=y)[0])),
         "pause_ratio": float(len(np.where(np.abs(y) < 0.02)[0]) / len(y)),
         "tempo": float(librosa.beat.tempo(y=y, sr=sr)[0])
     }
+
+def adjust_emotion_based_on_voice(text_emotion, audio_features):
+    label = text_emotion['label']
+    score = text_emotion['score']
+    reason = ""
+    adjusted = label
+
+    # Define thresholds (based on observation / research)
+    high_pause = audio_features['pause_ratio'] > 0.6
+    low_energy = audio_features['energy'] < 0.02
+    slow_tempo = audio_features['tempo'] < 90
+
+    # If model says "joy" but voice sounds tired, override
+    if label in ["joy", "neutral"] and (high_pause or low_energy or slow_tempo):
+        adjusted = "tired or anxious"
+        reason = "Emotion adjusted due to high pause ratio, low energy, or slow speech suggesting hidden fatigue/anxiety."
+    elif label == "sadness" and low_energy and high_pause:
+        adjusted = "deep sadness or burnout"
+        reason = "Confirmed by voice: high pauses and low vocal energy."
+    elif label == "anger" and audio_features['zcr'] > 0.1:
+        reason = "ZCR is high, matching sharp/angry tone."
+    else:
+        reason = "No strong acoustic signal to override emotion."
+
+    return adjusted, adjusted != label, reason
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
@@ -44,45 +69,53 @@ def analyze():
     audio_path = "audio/temp.wav"
     audio_file.save(audio_path)
 
-    # 1. Transcribe with Whisper
+    # 1. Transcribe
     transcript = whisper_model.transcribe(audio_path)["text"]
 
-    # 2. Extract audio features
+    # 2. Audio features
     audio_features = extract_audio_features(audio_path)
 
-    # 3. Detect emotion from text
+    # 3. Text emotion
     text_emotion = emotion_model(transcript)[0]
 
-    # 4. Gemini prompt
+    # 4. Adjust using audio clues
+    adjusted_emotion, flagged, reason = adjust_emotion_based_on_voice(text_emotion, audio_features)
+
+    # 5. Gemini (optional)
     prompt = f"""
     A user said: "{transcript}"
     Transcript emotion: {text_emotion['label']} (confidence: {round(text_emotion['score'], 2)})
+    Adjusted Emotion: {adjusted_emotion}
     Voice features:
     - Pause ratio: {audio_features['pause_ratio']:.2f}
     - Energy: {audio_features['energy']:.2f}
     - Tempo: {audio_features['tempo']:.1f}
 
-    Based on this, write a short sentence about how the person might be feeling. Then give a supportive one-liner.
+    Based on this, give a short 1-line insight about the user’s mental state and one supportive sentence.
     """
 
-    # 5. Get Gemini response
-    gemini_reply = genai.GenerativeModel('gemini-pro').generate_content(prompt).text
+    # Uncomment when ready
+    # gemini_reply = genai.GenerativeModel('gemini-pro').generate_content(prompt).text
+    gemini_reply = "Gemini API not configured yet."
 
-    # 6. Prepare response
     result = {
         "transcript": transcript,
         "text_emotion": text_emotion['label'],
         "confidence": round(text_emotion['score'], 2),
+        "adjusted_emotion": adjusted_emotion,
+        "flagged_by_voice": flagged,
+        "adjustment_reason": reason,
         "audio_features": audio_features,
         "gemini_reply": gemini_reply
     }
 
-    # 7. Save to MongoDB
-    collection.insert_one(result)
+    # Save to DB (if needed)
+    # collection.insert_one(result)
+
+    if os.path.exists(audio_path):
+        os.remove(audio_path)
 
     return jsonify(result)
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
