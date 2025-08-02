@@ -1,0 +1,24 @@
+# Virtual environment
+venv/
+
+# OS & Editor files
+.DS_Store
+__pycache__/
+*.pyc
+
+# Audio files
+audio/*.wav
+audio/*.mp3
+audio/*.m4a
+
+# Environment config
+.env
+
+# Python notebook checkpoint files (if used)
+.ipynb_checkpoints/
+
+# Model cache (optional, keeps repo small)
+*.pth
+*.pt
+*.safetensors
+whisper/
