@@ -81,22 +81,24 @@ def analyze():
     # 4. Adjust using audio clues
     adjusted_emotion, flagged, reason = adjust_emotion_based_on_voice(text_emotion, audio_features)
 
-    # 5. Gemini (optional)
     prompt = f"""
-    A user said: "{transcript}"
-    Transcript emotion: {text_emotion['label']} (confidence: {round(text_emotion['score'], 2)})
-    Adjusted Emotion: {adjusted_emotion}
-    Voice features:
+    The user said: "{transcript}"
+
+    Detected emotion: {adjusted_emotion}
+    Voice cues:
     - Pause ratio: {audio_features['pause_ratio']:.2f}
     - Energy: {audio_features['energy']:.2f}
     - Tempo: {audio_features['tempo']:.1f}
 
-    Based on this, give a short 1-line insight about the user’s mental state and one supportive sentence.
+    Respond like a real person who cares deeply.
+    1. Briefly acknowledge what the user is feeling, in your own words.
+    2. Then gently suggest one small thing that could help them feel even a little bit better.
+    3. Keep it natural, conversational, and kind — like you're truly talking to them. No labels or step numbers.
+    4. Be warm, human, and no instructions or stage directions.
     """
 
     # Uncomment when ready
-    # gemini_reply = genai.GenerativeModel('gemini-pro').generate_content(prompt).text
-    gemini_reply = "Gemini API not configured yet."
+    gemini_reply = genai.GenerativeModel('models/gemini-2.5-pro').generate_content(prompt).text
 
     result = {
         "transcript": transcript,
