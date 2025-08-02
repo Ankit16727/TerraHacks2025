@@ -10,9 +10,9 @@ interface AudioVisualizerProps {
 export default function AudioVisualizer({ isRecording, audioStream }: AudioVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const animationRef = useRef<number>()
-  const analyserRef = useRef<AnalyserNode>()
-  const audioContextRef = useRef<AudioContext>()
+  const animationRef = useRef<number | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
   const amplitudeDataRef = useRef<number[]>([])
   const [dimensions, setDimensions] = useState({ width: 400, height: 100 })
 
@@ -197,7 +197,10 @@ export default function AudioVisualizer({ isRecording, audioStream }: AudioVisua
       cancelAnimationFrame(animationRef.current)
     }
     if (audioContextRef.current) {
-      audioContextRef.current.close()
+      // Only close if not already closed
+      if (audioContextRef.current.state !== "closed") {
+        audioContextRef.current.close().catch(() => {})
+      }
     }
     amplitudeDataRef.current = []
   }

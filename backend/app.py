@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import whisper
@@ -13,9 +14,10 @@ from emotion_utils import extract_audio_features, adjust_emotion_based_on_voice
 
 load_dotenv()
 app = Flask(__name__)
+CORS(app)
 
 # Load Whisper model
-whisper_model = whisper.load_model("base")
+whisper_model = whisper.load_model("tiny")
 
 # Load Hugging Face emotion classifier
 emotion_model = pipeline("text-classification", model="nateraw/bert-base-uncased-emotion")

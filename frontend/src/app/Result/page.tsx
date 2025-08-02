@@ -1,22 +1,34 @@
 "use client"
 
 import { ChevronLeft } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function Result() {
   const [isLoading, setIsLoading] = useState(false)
+  const [transcript, setTranscript] = useState<string | null>(null)
+  const searchParams = useSearchParams()
   const router = useRouter()
 
-  const handleContinue = async () => {
+  useEffect(() => {
+    const dataParam = searchParams.get("data")
+    if (dataParam) {
+      try {
+        const parsed = JSON.parse(dataParam)
+        setTranscript(parsed.transcript || "No transcript found.")
+      } catch (err) {
+        console.error("Error parsing result data:", err)
+        setTranscript("Error loading transcript.")
+      }
+    }
+  }, [searchParams])
+
+  const handleContinue = () => {
     setIsLoading(true)
-    // Handle continue action
-    console.log("Continue button clicked")
-    
     setTimeout(() => {
       setIsLoading(false)
-      router.push("/chatbot")
+      router.push("/chatbot") // Modify if you're sending more data later
     }, 500)
   }
 
@@ -40,10 +52,7 @@ export default function Result() {
           {/* Content Card */}
           <div className="bg-white/30 backdrop-blur-sm rounded-xl p-8 border border-white/40 shadow-lg">
             <p className="text-slate-700 text-center leading-relaxed text-base font-medium">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut 
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris 
-              nisi ut aliquip ex ea commodo consequat.
+              {transcript ? `${transcript}` : "Loading..."}
             </p>
           </div>
 

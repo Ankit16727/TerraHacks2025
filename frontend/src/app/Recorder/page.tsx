@@ -1,5 +1,5 @@
 "use client"
-
+import { useRouter } from "next/navigation"
 import { Mic, MicOff, Square } from "lucide-react"
 import { useState, useRef, useCallback } from "react"
 import AudioVisualizer from "@/components/audio-visualizer"
@@ -10,9 +10,11 @@ export default function Recorder() {
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null)
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
   const [recordingTime, setRecordingTime] = useState(0)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout>()
+  const router = useRouter()
 
   const requestMicrophonePermission = useCallback(async () => {
     try {
@@ -56,19 +58,34 @@ export default function Recorder() {
       }
     }
 
-    mediaRecorder.onstop = () => {
+    mediaRecorder.onstop = async () => {
       const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" })
+      const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" })
+      const formData = new FormData()
+      formData.append("audio", audioFile)
+
       const url = URL.createObjectURL(audioBlob)
       setAudioURL(url)
 
-      // Stop timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
-
-      // Stop all tracks to release the microphone
+      // Clean up
+      if (timerRef.current) clearInterval(timerRef.current)
       stream.getTracks().forEach((track) => track.stop())
       setAudioStream(null)
+      setIsAnalyzing(true)
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analyze`, {
+          method: "POST",
+          body: formData,
+        })
+
+        const result = await res.json()
+        console.log("Analysis result:", result)
+
+        // ✅ Navigate to another page with query or shared state
+        router.push(`/Result?data=${encodeURIComponent(JSON.stringify(result))}`)
+      } catch (err) {
+        console.error("Failed to analyze audio", err)
+      }
     }
 
     mediaRecorder.start(100)
@@ -130,6 +147,20 @@ export default function Recorder() {
       return "bg-green-400 hover:bg-green-500"
     }
     return "bg-blue-200 hover:bg-blue-300 hover:shadow-md"
+  }
+
+  if (isAnalyzing) {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-200 flex flex-col items-center justify-center px-6 py-12">
+      <div className="flex flex-col items-center space-y-6 text-slate-600 text-lg font-medium">
+        <svg className="animate-spin h-10 w-10 text-blue-600" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+        <p>Analyzing your voice…</p>
+      </div>
+    </div>
+  )
   }
 
   return (
