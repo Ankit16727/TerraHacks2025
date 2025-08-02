@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
+from playsound import playsound
 
 load_dotenv()
 app = Flask(__name__)
@@ -118,6 +119,11 @@ def analyze():
         os.remove(audio_path)
 
     return jsonify(result)
+
+@app.route("/elevenlabs", methods=["POST"])
+def elevenlabs_tts():
+    elevenlabs_audio = "elevenlabs.wav"
+    playsound(elevenlabs_audio)
 
 if __name__ == "__main__":
     app.run(debug=True)
