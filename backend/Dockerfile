@@ -1,17 +1,28 @@
 # Use official Python image
 FROM python:3.10-slim
 
-# Install ffmpeg
-RUN apt-get update && apt-get install -y ffmpeg
+# Install system dependencies including ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg gcc libsndfile1
 
 # Set working directory
 WORKDIR /app
 
-# Copy all files into the container
+# Copy all files to the container
 COPY . .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install required Python packages
+RUN pip install --no-cache-dir \
+    flask \
+    flask-cors \
+    python-dotenv \
+    openai-whisper \
+    transformers \
+    google-generativeai \
+    pymongo \
+    twilio \
+    librosa \
+    soundfile \
+    numpy
 
-# Set the default command to run your app
+# Run the app
 CMD ["python", "app.py"]
