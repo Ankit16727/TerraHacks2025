@@ -10,7 +10,6 @@ import numpy as np
 import requests
 from transformers import pipeline
 import google.generativeai as genai
-from playsound import playsound
 from database import save_analysis, get_user_history
 from emotion_utils import extract_audio_features, adjust_emotion_based_on_voice
 from twilio.rest import Client
