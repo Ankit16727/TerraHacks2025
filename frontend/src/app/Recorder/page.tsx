@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation"
 import { Mic, MicOff, Square } from "lucide-react"
 import { useState, useRef, useCallback } from "react"
 import AudioVisualizer from "@/components/audio-visualizer"
+import BreathingLoader from "@/components/BreathingLoader" // Adjust path as needed
 
 export default function Recorder() {
   const [isRecording, setIsRecording] = useState(false)
@@ -153,11 +154,9 @@ export default function Recorder() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-200 flex flex-col items-center justify-center px-6 py-12">
       <div className="flex flex-col items-center space-y-6 text-slate-600 text-lg font-medium">
-        <svg className="animate-spin h-10 w-10 text-blue-600" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-        <p>Analyzing your voice…</p>
+        
+        {/* Add the breathing loader below */}
+        <BreathingLoader />
       </div>
     </div>
   )
