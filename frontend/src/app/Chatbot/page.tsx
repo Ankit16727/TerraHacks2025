@@ -1,8 +1,8 @@
 "use client"
 
-import { ChevronLeft, Send, Bot, User, Mic, MicOff } from "lucide-react"
+import { ChevronLeft, Send, Bot, User, Phone } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import AudioVisualizer from "@/components/audio-visualizer"
+import { useRouter } from "next/navigation"
 
 interface Message {
   id: string
@@ -14,14 +14,12 @@ interface Message {
 }
 
 export default function ChatbotPage() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState("")
   const [isBotTyping, setIsBotTyping] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -46,118 +44,28 @@ export default function ChatbotPage() {
       setMessages([welcomeMessage])
       setShowChat(true)
     }
-    
-    // Clean up
-    return () => {
-      localStorage.removeItem('emotionalAnalysis')
-    }
   }, [])
+
+  useEffect(() => {
+    // Auto-scroll to bottom when new messages are added
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [messages, isBotTyping])
 
   const generateWelcomeMessage = (emotion: string) => {
     const templates: {[key: string]: string} = {
-      "stress": "I notice you're feeling stressed. Let's work through this together. How long have you been feeling this way?",
-      "anxiety": "I can sense some anxiety. That's perfectly normal, and I'm here to help. Would you like to talk about what's causing these feelings?",
-      "sadness": "I understand you're feeling down. Your feelings are valid, and I'm here to listen. What's been on your mind?",
-      "anger": "I can tell you're frustrated. It's important to acknowledge these feelings. Would you like to tell me more about what's bothering you?",
-      "joy": "It's wonderful to hear the positivity in your voice! What's been making you feel this way?",
-      "neutral": "Thank you for sharing with me. I'm here to listen and support you. How are you feeling right now?"
+      "stress": "I notice you're feeling stressed. Let's work through this together step by step. What specific situation is causing you the most stress right now?",
+      "anxiety": "I can see from your previous input that you're experiencing some anxiety. That's completely normal, and I'm here to help. What thoughts are running through your mind that might be contributing to these anxious feelings?",
+      "sadness": "I understand you're feeling down right now. Your feelings are completely valid, and I'm here to listen without judgment. What's been weighing most heavily on your mind?",
+      "anger": "I can tell from what you shared that you're frustrated about something. It's important to acknowledge these feelings rather than push them down. What situation or person is triggering this anger for you?",
+      "fear": "I can see some fear or worry in what you shared earlier. Fear often comes from uncertainty about the future. What specific outcome are you most concerned about right now?",
+      "joy": "It's wonderful to see some positivity in what you shared! Even when we're feeling good, it's valuable to explore what's contributing to these feelings. What's been going well for you recently?",
+      "surprise": "It sounds like something unexpected has happened in your life. Change and surprises can be both exciting and overwhelming. How are you processing this new development?",
+      "neutral": "Thank you for sharing with me. Sometimes our emotions can be complex or mixed. I'm here to help you explore whatever you're experiencing. What's been on your mind lately?"
     }
     
     return templates[emotion.toLowerCase()] || templates.neutral
-  }
-
-  const startRecording = async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    setAudioStream(stream)
-    
-    const recorder = new MediaRecorder(stream)
-    setMediaRecorder(recorder)
-    
-    const chunks: Blob[] = []
-    recorder.ondataavailable = (e) => chunks.push(e.data)
-    
-    recorder.onstop = async () => {
-      const audioBlob = new Blob(chunks, { type: "audio/wav" })
-      const formData = new FormData()
-      formData.append("audio", audioBlob)
-      
-      setIsBotTyping(true)
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analyze`, {
-          method: "POST",
-          body: formData,
-        })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        
-        const result = await response.json()
-        
-        const welcomeMessage: Message = {
-            id: Date.now().toString(),
-            text: result.welcome_message,
-            sender: "bot",
-            timestamp: new Date()
-        }
-        setMessages(prev => [...prev, welcomeMessage])
-
-        // Play welcome audio
-        const welcomeAudio = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: result.welcome_message }),
-        })
-        
-        const welcomeBlob = await welcomeAudio.blob()
-        const welcomeSound = new Audio(URL.createObjectURL(welcomeBlob))
-        await welcomeSound.play()
-
-        // Wait for welcome message to finish
-        await new Promise(resolve => {
-            welcomeSound.onended = resolve
-        })
-
-        // Then add and play AI response
-        const botMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            text: result.gemini_reply,
-            sender: "bot",
-            timestamp: new Date()
-        }
-        setMessages(prev => [...prev, botMessage])
-
-        const responseAudio = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: result.gemini_reply }),
-        })
-        
-        const responseBlob = await responseAudio.blob()
-        const responseSound = new Audio(URL.createObjectURL(responseBlob))
-        await responseSound.play()
-
-    } catch (error) {
-        console.error("Failed to analyze audio:", error)
-    }
-    setIsBotTyping(false)
-}
-    
-    recorder.start()
-    setIsRecording(true)
-    
-  } catch (error) {
-    console.error("Error accessing microphone:", error)
-  }
-}
-
-  const stopRecording = () => {
-    mediaRecorder?.stop()
-    audioStream?.getTracks().forEach(track => track.stop())
-    setIsRecording(false)
-    setMediaRecorder(null)
-    setAudioStream(null)
   }
 
   const handleBack = () => {
@@ -165,6 +73,9 @@ export default function ChatbotPage() {
       setShowChat(false)
       setMessages([])
       setInputText("")
+    } else {
+      // Navigate back to the main app
+      router.back()
     }
   }
 
@@ -175,11 +86,19 @@ export default function ChatbotPage() {
     setShowChat(true)
     const welcomeMessage: Message = {
       id: Date.now().toString(),
-      text: "Hello! I'm here to help you. How are you feeling today? Feel free to speak or type what's on your mind.",
+      text: "Hello! I'm here to help you work through whatever you're experiencing. How are you feeling today? Feel free to share what's on your mind.",
       sender: "bot",
       timestamp: new Date()
     }
     setMessages([welcomeMessage])
+  }
+
+  const navigateToCall = () => {
+    // Save current emotional analysis to localStorage for call to use
+    if (emotionalAnalysis) {
+      localStorage.setItem('emotionalAnalysis', JSON.stringify(emotionalAnalysis))
+    }
+    router.push('/Call')
   }
 
   const sendMessage = async () => {
@@ -197,39 +116,114 @@ export default function ChatbotPage() {
     setIsBotTyping(true)
 
     try {
+      // Build conversation context from recent messages
+      const recentConversation = messages.slice(-6).map(message => 
+        `${message.sender === 'user' ? 'User' : 'Assistant'}: ${message.text}`
+      ).join('\n')
+
+      // Create a contextual prompt for mental health support
+      const contextualPrompt = `
+You are a compassionate AI mental health assistant providing text-based support.
+
+RECENT CONVERSATION CONTEXT:
+${recentConversation}
+
+USER JUST SAID: "${userMessage.text}"
+
+${emotionalAnalysis ? `
+INITIAL SESSION CONTEXT (for background only):
+- Original concern: "${emotionalAnalysis.transcript}"
+- Initial emotion: ${emotionalAnalysis.adjusted_emotion}
+- Confidence: ${Math.round(emotionalAnalysis.confidence * 100)}%
+` : ''}
+
+Instructions:
+1. Respond DIRECTLY and thoughtfully to what the user just said: "${userMessage.text}"
+2. Be warm, empathetic, and genuinely helpful - not just supportive platitudes
+3. Ask meaningful follow-up questions that help them explore their feelings
+4. Provide practical, actionable suggestions when appropriate
+5. Validate their emotions while helping them gain insight
+6. Keep responses conversational but substantive (2-4 sentences)
+7. Focus on their current words and build on the conversation naturally
+
+Your goal is to provide genuine mental health support that helps them process their thoughts and feelings constructively.
+`
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage.text }),
+        body: JSON.stringify({ 
+          message: userMessage.text,
+          context: contextualPrompt,
+          conversation_history: recentConversation
+        }),
       })
       
-      const result = await response.json()
-      
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: result.reply,
-        sender: "bot",
-        timestamp: new Date()
+      if (response.ok) {
+        const result = await response.json()
+        
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: result.reply,
+          sender: "bot",
+          timestamp: new Date()
+        }
+        
+        setMessages(prev => [...prev, botMessage])
+      } else {
+        // Fallback response if API fails
+        const fallbackResponse = generateFallbackResponse(userMessage.text)
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: fallbackResponse,
+          sender: "bot",
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, botMessage])
       }
-      
-      setMessages(prev => [...prev, botMessage])
-
-      // Play audio response
-      const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: result.reply }),
-      })
-      
-      const audioBlob = await audioResponse.blob()
-      const audio = new Audio(URL.createObjectURL(audioBlob))
-      await audio.play()
 
     } catch (error) {
       console.error("Failed to get response:", error)
+      // Provide a helpful fallback response
+      const fallbackResponse = generateFallbackResponse(userMessage.text)
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: fallbackResponse,
+        sender: "bot",
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, botMessage])
     }
     
     setIsBotTyping(false)
+  }
+
+  const generateFallbackResponse = (userInput: string) => {
+    // Generate contextual fallback responses based on common keywords
+    const input = userInput.toLowerCase()
+    
+    if (input.includes('sad') || input.includes('depressed') || input.includes('down')) {
+      return "I can see that you're feeling really down right now. That takes courage to share. Can you tell me what specific thoughts or situations are contributing to these feelings? Sometimes talking through the details can help us understand what might help."
+    }
+    
+    if (input.includes('anxious') || input.includes('worried') || input.includes('nervous')) {
+      return "Anxiety can feel overwhelming, especially when our minds start racing with 'what if' scenarios. What specific situation or thought is triggering the most anxiety for you right now? Let's try to break it down together."
+    }
+    
+    if (input.includes('angry') || input.includes('frustrated') || input.includes('mad')) {
+      return "It sounds like something has really upset you, and those feelings are completely valid. Anger often signals that something important to us feels threatened or violated. What situation or behavior triggered these feelings?"
+    }
+    
+    if (input.includes('stressed') || input.includes('overwhelmed') || input.includes('pressure')) {
+      return "Feeling overwhelmed often happens when we have too much on our plate or feel like we're losing control. What's the biggest source of stress in your life right now? Sometimes identifying the main stressor can help us figure out the first step to take."
+    }
+    
+    if (input.includes('confused') || input.includes('lost') || input.includes('don\'t know')) {
+      return "Feeling uncertain or confused is actually very human - it shows you're thoughtfully considering your situation rather than rushing to conclusions. What specific aspect of your situation feels most unclear to you right now?"
+    }
+    
+    // Default empathetic response
+    return `Thank you for sharing that with me. I can tell this is important to you. Can you help me understand more about what you're experiencing? What aspect of this situation is affecting you most right now?`
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -281,6 +275,12 @@ export default function ChatbotPage() {
             <Bot className="w-6 h-6 text-slate-600" />
             <span className="text-lg font-medium text-slate-700">AI Assistant</span>
           </div>
+          <button 
+            onClick={navigateToCall}
+            className="flex items-center text-green-600 hover:text-green-800 transition-colors duration-200 bg-white/30 backdrop-blur-sm px-3 py-2 rounded-lg border border-white/40"
+          >
+            <Phone className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -320,32 +320,17 @@ export default function ChatbotPage() {
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
-              disabled={isBotTyping || isRecording}
+              disabled={isBotTyping}
               className="flex-1 px-4 py-3 bg-white/40 backdrop-blur-sm border border-white/50 rounded-xl text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
             />
             <button
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`px-6 py-3 ${
-                isRecording 
-                  ? "bg-red-500 hover:bg-red-600" 
-                  : "bg-blue-500 hover:bg-blue-600"
-              } text-white rounded-xl transition-colors duration-200 flex items-center justify-center`}
-            >
-              {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </button>
-            <button
               onClick={sendMessage}
-              disabled={(!inputText.trim() && !isRecording) || isBotTyping}
+              disabled={!inputText.trim() || isBotTyping}
               className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-xl transition-colors duration-200 flex items-center justify-center"
             >
               <Send className="w-5 h-5" />
             </button>
           </div>
-          {isRecording && (
-            <div className="mt-4">
-              <AudioVisualizer isRecording={isRecording} audioStream={audioStream} />
-            </div>
-          )}
         </div>
       </div>
     )
@@ -353,7 +338,7 @@ export default function ChatbotPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-200 flex flex-col">
-      <div className="flex items-center p-6 pt-12">
+      <div className="flex items-center justify-between p-6 pt-12">
         <button 
           onClick={handleBack}
           className="flex items-center text-slate-600 hover:text-slate-800 transition-colors duration-200"
@@ -361,14 +346,23 @@ export default function ChatbotPage() {
           <ChevronLeft className="w-6 h-6 mr-2" />
           <span className="text-lg font-medium">Back</span>
         </button>
+        
+        <button 
+          onClick={navigateToCall}
+          className="flex items-center text-green-600 hover:text-green-800 transition-colors duration-200 bg-white/30 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/40"
+        >
+          <Phone className="w-5 h-5 mr-2" />
+          <span className="text-sm font-medium">Call</span>
+        </button>
       </div>
 
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
         <div className="max-w-lg w-full mx-auto text-center space-y-12">
           <div className="bg-white/30 backdrop-blur-sm rounded-xl p-8 border border-white/40 shadow-lg">
+            <h1 className="text-2xl font-bold text-slate-800 mb-4">AI Mental Health Chat</h1>
             <p className="text-slate-700 text-center leading-relaxed text-base font-medium">
-              Welcome to your AI Mental Health Assistant. Here you can speak or type freely about your thoughts and feelings. 
-              The AI will analyze your emotions and provide supportive responses, both in text and voice.
+              Have a text conversation with your AI mental health assistant. Share your thoughts and feelings, 
+              and receive personalized support and guidance in a safe, judgment-free environment.
             </p>
           </div>
 

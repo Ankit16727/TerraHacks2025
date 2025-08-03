@@ -62,7 +62,7 @@ export default function Result() {
     }
 
     // Proceed to chatbot
-    router.push("/Chatbot")
+    router.push("/Call")
     }else {
       setIsLoading(false)
     }
