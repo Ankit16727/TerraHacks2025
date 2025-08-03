@@ -1,20 +1,28 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
+import io
+import requests
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import whisper
 import librosa
 import numpy as np
+import requests
 from transformers import pipeline
 import google.generativeai as genai
 from playsound import playsound
-from text_to_speech import get_elevenlabs_audio
 from database import save_analysis, get_user_history
 from emotion_utils import extract_audio_features, adjust_emotion_based_on_voice
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Load Whisper model
 whisper_model = whisper.load_model("tiny")
@@ -24,6 +32,59 @@ emotion_model = pipeline("text-classification", model="nateraw/bert-base-uncased
 
 # Gemini API setup
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+API_KEY = os.getenv("ELEVENLABS_API_KEY")
+VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
+
+def get_elevenlabs_audio(text):
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+    
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": API_KEY
+    }
+
+    data = {
+        "text": text,
+        "voice_settings": {
+            "stability": 0.4,
+            "similarity_boost": 0.5
+        }
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+    response.raise_for_status()
+    return response.content
+
+@app.route("/speak", methods=["POST", "OPTIONS"])
+def speak():
+    # Handle preflight request
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "ok"})
+        response.headers.add("Access-Control-Allow-Methods", "POST")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        return response
+
+    # Handle actual request
+    data = request.get_json()
+    if not data or "text" not in data:
+        return jsonify({"error": "No text provided"}), 400
+        
+    try:
+        audio_data = get_elevenlabs_audio(data["text"])
+        response = send_file(
+            io.BytesIO(audio_data),
+            mimetype="audio/mpeg",
+            as_attachment=True,
+            download_name="response.mp3"
+        )
+        # Add CORS headers to the response
+        response.headers.add("Access-Control-Allow-Origin", request.origin or "*")
+        return response
+    except Exception as e:
+        print(f"Text-to-speech error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
@@ -94,11 +155,6 @@ def history():
     ]
     return jsonify(response)
 
-@app.route("/elevenlabs", methods=["POST"])
-def elevenlabs_tts():
-    get_elevenlabs_audio("Hi, I'm Evelyn. I'm here to help you feel better.")
-    playsound("elevenlabs.wav")
-    return jsonify({"status": "played"})
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    os.makedirs("audio", exist_ok=True)
+    app.run(debug=True, use_reloader=False)

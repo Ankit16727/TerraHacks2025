@@ -4,25 +4,30 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_elevenlabs_audio(text, output_path="elevenlabs.wav"):
-    api_key = os.getenv("ELEVENLABS_API_KEY")
-    voice_id = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
+API_KEY = os.getenv("ELEVENLABS_API_KEY")
+VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
 
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+def get_elevenlabs_audio(text):
+    TEXT = text
+
+    URL = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
 
     headers = {
-        "xi-api-key": api_key,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "xi-api-key": API_KEY
     }
 
     payload = {
-        "text": text,
+        "text": TEXT,
         "voice_settings": {
             "stability": 0.4,
-            "similarity_boost": 0.75
+            "similarity_boost": 0.5
         }
     }
 
-    response = requests.post(url, headers=headers, json=payload)
-    with open(output_path, "wb") as f:
+    response = requests.post(URL, json=payload, headers=headers)
+    response.raise_for_status()
+
+    output_file = "elevenlabs.wav"
+    with open(output_file, "wb") as f:
         f.write(response.content)

@@ -1,30 +1,34 @@
 "use client"
 
-import { ChevronLeft, Send, Bot, User } from "lucide-react"
+import { ChevronLeft, Send, Bot, User, Mic, MicOff } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
+import AudioVisualizer from "@/components/audio-visualizer"
 
 interface Message {
   id: string
   text: string
   sender: "user" | "bot"
   timestamp: Date
+  emotion?: string
+  confidence?: number
 }
 
-export default function LoremIpsumPage() {
+export default function ChatbotPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState("")
   const [isBotTyping, setIsBotTyping] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, isBotTyping])
 
-  // Focus input when chat opens
   useEffect(() => {
     if (showChat) {
       setTimeout(() => {
@@ -33,64 +37,116 @@ export default function LoremIpsumPage() {
     }
   }, [showChat])
 
+  const startRecording = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    setAudioStream(stream)
+    
+    const recorder = new MediaRecorder(stream)
+    setMediaRecorder(recorder)
+    
+    const chunks: Blob[] = []
+    recorder.ondataavailable = (e) => chunks.push(e.data)
+    
+    recorder.onstop = async () => {
+      const audioBlob = new Blob(chunks, { type: "audio/wav" })
+      const formData = new FormData()
+      formData.append("audio", audioBlob)
+      
+      setIsBotTyping(true)
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analyze`, {
+          method: "POST",
+          body: formData,
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        // Add user message
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          text: result.transcript,
+          sender: "user",
+          timestamp: new Date(),
+          emotion: result.adjusted_emotion,
+          confidence: result.confidence
+        }
+        setMessages(prev => [...prev, userMessage])
+
+        // Add bot message
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: result.gemini_reply,
+          sender: "bot",
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, botMessage])
+
+        // Get audio response
+        const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg",
+          },
+          body: JSON.stringify({ text: result.gemini_reply }),
+        })
+        
+        if (!audioResponse.ok) {
+          throw new Error(`HTTP error! status: ${audioResponse.status}`)
+        }
+        
+        const audioBlob = await audioResponse.blob()
+        const audio = new Audio(URL.createObjectURL(audioBlob))
+        await audio.play()
+
+      } catch (error) {
+        console.error("Failed to analyze audio:", error)
+      }
+      setIsBotTyping(false)
+    }
+    
+    recorder.start()
+    setIsRecording(true)
+    
+  } catch (error) {
+    console.error("Error accessing microphone:", error)
+  }
+}
+
+  const stopRecording = () => {
+    mediaRecorder?.stop()
+    audioStream?.getTracks().forEach(track => track.stop())
+    setIsRecording(false)
+    setMediaRecorder(null)
+    setAudioStream(null)
+  }
+
   const handleBack = () => {
     if (showChat) {
       setShowChat(false)
       setMessages([])
       setInputText("")
-    } else {
-      console.log("Back button clicked")
     }
   }
 
   const handleContinue = async () => {
     setIsLoading(true)
-    
-    // Simulate loading
     setTimeout(() => {
       setIsLoading(false)
       setShowChat(true)
-      
-      // Add welcome message from bot
       const welcomeMessage: Message = {
         id: Date.now().toString(),
-        text: "Hello! I'm here to help you. How are you feeling today? Feel free to share what's on your mind.",
+        text: "Hello! I'm here to help you. How are you feeling today? Feel free to speak or type what's on your mind.",
         sender: "bot",
         timestamp: new Date()
       }
       setMessages([welcomeMessage])
     }, 1000)
-  }
-
-  const generateBotResponse = (userMessage: string): string => {
-    const responses = [
-      "That's really interesting. Can you tell me more about that?",
-      "I understand how you're feeling. It's completely normal to feel this way.",
-      "Thank you for sharing that with me. How does that make you feel?",
-      "That sounds like it was quite an experience. What did you learn from it?",
-      "I appreciate you opening up about this. What would you like to explore further?",
-      "It sounds like you've been through a lot. What support do you feel you need right now?",
-      "That's a thoughtful perspective. Have you considered looking at it from a different angle?",
-      "Your feelings are valid. What do you think might help you feel better about this situation?"
-    ]
-    
-    // Simple keyword-based responses
-    const lowerMessage = userMessage.toLowerCase()
-    
-    if (lowerMessage.includes("sad") || lowerMessage.includes("down")) {
-      return "I'm sorry you're feeling sad. It's okay to have difficult emotions. What's been weighing on your mind?"
-    }
-    if (lowerMessage.includes("happy") || lowerMessage.includes("good") || lowerMessage.includes("great")) {
-      return "That's wonderful to hear! I'm glad you're feeling positive. What's been going well for you?"
-    }
-    if (lowerMessage.includes("stress") || lowerMessage.includes("anxious") || lowerMessage.includes("worried")) {
-      return "Stress and anxiety can be really challenging. What's been causing you to feel this way? Sometimes talking about it can help."
-    }
-    if (lowerMessage.includes("tired") || lowerMessage.includes("exhausted")) {
-      return "It sounds like you've been feeling drained. Rest is so important. What's been keeping you busy or preventing you from getting the rest you need?"
-    }
-    
-    return responses[Math.floor(Math.random() * responses.length)]
   }
 
   const sendMessage = async () => {
@@ -107,18 +163,40 @@ export default function LoremIpsumPage() {
     setInputText("")
     setIsBotTyping(true)
 
-    // Simulate bot thinking time
-    setTimeout(() => {
-      const botResponse: Message = {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage.text }),
+      })
+      
+      const result = await response.json()
+      
+      const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateBotResponse(userMessage.text),
+        text: result.reply,
         sender: "bot",
         timestamp: new Date()
       }
       
-      setMessages(prev => [...prev, botResponse])
-      setIsBotTyping(false)
-    }, 1000 + Math.random() * 2000) // 1-3 seconds delay
+      setMessages(prev => [...prev, botMessage])
+
+      // Play audio response
+      const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: result.reply }),
+      })
+      
+      const audioBlob = await audioResponse.blob()
+      const audio = new Audio(URL.createObjectURL(audioBlob))
+      await audio.play()
+
+    } catch (error) {
+      console.error("Failed to get response:", error)
+    }
+    
+    setIsBotTyping(false)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -128,10 +206,36 @@ export default function LoremIpsumPage() {
     }
   }
 
+  const MessageBubble = ({ message }: { message: Message }) => (
+    <div
+      className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+        message.sender === "user"
+          ? "bg-blue-500 text-white"
+          : "bg-white/40 backdrop-blur-sm text-slate-700 border border-white/50"
+      }`}
+    >
+      <div className="flex items-start space-x-2">
+        {message.sender === "bot" && (
+          <Bot className="w-4 h-4 mt-1 text-slate-500" />
+        )}
+        {message.sender === "user" && (
+          <User className="w-4 h-4 mt-1 text-blue-100" />
+        )}
+        <div>
+          <p className="text-sm leading-relaxed">{message.text}</p>
+          {message.emotion && (
+            <p className="text-xs mt-1 opacity-75">
+              Emotion: {message.emotion} ({message.confidence}% confidence)
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
   if (showChat) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-200 flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 pt-12 bg-white/20 backdrop-blur-sm border-b border-white/30">
           <button 
             onClick={handleBack}
@@ -146,34 +250,16 @@ export default function LoremIpsumPage() {
           </div>
         </div>
 
-        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                  message.sender === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white/40 backdrop-blur-sm text-slate-700 border border-white/50"
-                }`}
-              >
-                <div className="flex items-start space-x-2">
-                  {message.sender === "bot" && (
-                    <Bot className="w-4 h-4 mt-1 text-slate-500" />
-                  )}
-                  {message.sender === "user" && (
-                    <User className="w-4 h-4 mt-1 text-blue-100" />
-                  )}
-                  <p className="text-sm leading-relaxed">{message.text}</p>
-                </div>
-              </div>
+              <MessageBubble message={message} />
             </div>
           ))}
           
-          {/* Bot typing indicator */}
           {isBotTyping && (
             <div className="flex justify-start">
               <div className="bg-white/40 backdrop-blur-sm text-slate-700 border border-white/50 px-4 py-3 rounded-2xl">
@@ -192,7 +278,6 @@ export default function LoremIpsumPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
         <div className="p-6 bg-white/20 backdrop-blur-sm border-t border-white/30">
           <div className="flex space-x-4">
             <input
@@ -202,17 +287,32 @@ export default function LoremIpsumPage() {
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
-              disabled={isBotTyping}
+              disabled={isBotTyping || isRecording}
               className="flex-1 px-4 py-3 bg-white/40 backdrop-blur-sm border border-white/50 rounded-xl text-slate-700 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
             />
             <button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`px-6 py-3 ${
+                isRecording 
+                  ? "bg-red-500 hover:bg-red-600" 
+                  : "bg-blue-500 hover:bg-blue-600"
+              } text-white rounded-xl transition-colors duration-200 flex items-center justify-center`}
+            >
+              {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+            <button
               onClick={sendMessage}
-              disabled={!inputText.trim() || isBotTyping}
+              disabled={(!inputText.trim() && !isRecording) || isBotTyping}
               className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-xl transition-colors duration-200 flex items-center justify-center"
             >
               <Send className="w-5 h-5" />
             </button>
           </div>
+          {isRecording && (
+            <div className="mt-4">
+              <AudioVisualizer isRecording={isRecording} audioStream={audioStream} />
+            </div>
+          )}
         </div>
       </div>
     )
@@ -220,7 +320,6 @@ export default function LoremIpsumPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-200 flex flex-col">
-      {/* Header with Back Button */}
       <div className="flex items-center p-6 pt-12">
         <button 
           onClick={handleBack}
@@ -231,21 +330,15 @@ export default function LoremIpsumPage() {
         </button>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
         <div className="max-w-lg w-full mx-auto text-center space-y-12">
-          
-          {/* Content Card */}
           <div className="bg-white/30 backdrop-blur-sm rounded-xl p-8 border border-white/40 shadow-lg">
             <p className="text-slate-700 text-center leading-relaxed text-base font-medium">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut 
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris 
-              nisi ut aliquip ex ea commodo consequat.
+              Welcome to your AI Mental Health Assistant. Here you can speak or type freely about your thoughts and feelings. 
+              The AI will analyze your emotions and provide supportive responses, both in text and voice.
             </p>
           </div>
 
-          {/* Continue Button */}
           <button 
             onClick={handleContinue}
             disabled={isLoading}
@@ -255,7 +348,7 @@ export default function LoremIpsumPage() {
                 : "bg-blue-400 hover:bg-blue-500 hover:shadow-lg hover:scale-[1.02]"
             }`}
           >
-            {isLoading ? "Loading..." : "Continue"}
+            {isLoading ? "Loading..." : "Start Conversation"}
           </button>
         </div>
       </div>
