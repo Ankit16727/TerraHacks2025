@@ -147,13 +147,23 @@ def history():
     history = get_user_history(user_id)
     response = [
         {
-            "transcript": item["transcript"],
-            "emotion": item["adjusted_emotion"],
-            "confidence": item["confidence"],
+            "_id": str(item["_id"]),
+            "transcript": item.get("transcript", ""),
+            "text_emotion": item.get("text_emotion", ""),
+            "adjusted_emotion": item.get("adjusted_emotion", ""),
+            "gemini_reply": item.get("gemini_reply", ""),
+            "confidence": item.get("confidence", 0.0),
             "timestamp": str(item["_id"].generation_time)
         } for item in history
     ]
     return jsonify(response)
+
+
+@app.route("/elevenlabs", methods=["POST"])
+def elevenlabs_tts():
+    get_elevenlabs_audio("Hi, I'm Evelyn. I'm here to help you feel better.")
+    playsound("elevenlabs.wav")
+    return jsonify({"status": "played"})
 
 if __name__ == "__main__":
     os.makedirs("audio", exist_ok=True)
