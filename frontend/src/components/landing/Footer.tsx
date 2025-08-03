@@ -27,13 +27,13 @@ export function Footer() {
             <div className="mb-4 flex items-center gap-3">
               <Image
                 src="/logo.svg"
-                alt="Eve Logo"
+                alt="Adam Logo"
                 width={32}
                 height={32}
                 className="drop-shadow-sm"
               />
               <h3 className="font-heading text-xl font-semibold text-foreground">
-                Eve
+                Adam
               </h3>
             </div>
             <p className="mb-4 max-w-md text-sm leading-relaxed text-foreground/70">
@@ -44,7 +44,7 @@ export function Footer() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-xs text-foreground/60">
                 <Heart className="h-3 w-3 text-red-500" />
-                <span>Made with care for students</span>
+                <span>Made with care for all</span>
               </div>
             </div>
           </motion.div>
@@ -119,7 +119,7 @@ export function Footer() {
           viewport={{ once: true }}
         >
           <div className="text-center text-xs text-foreground/60 md:text-left">
-            <p>© 2024 Eve. All rights reserved.</p>
+            <p>© 2024 Adam. All rights reserved.</p>
             <p className="mt-1">
               Building safer communities, one connection at a time.
             </p>

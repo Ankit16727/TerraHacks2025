@@ -21,7 +21,7 @@ export function PhoneShowcase() {
           transition={{ duration: 0.6, delay: 0.2 }}
           viewport={{ once: true }}
         >
-          See Eve in Action
+          See Adam in Action
         </motion.h2>
         <motion.p
           className="mx-auto max-w-2xl text-lg text-foreground/70"

@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 
 const phrases = [
-  "Safe Walks.",
+  "Trusted Environment.",
   "Live Support.",
-  "Smart Alerts.",
-  "Trusted Circles.",
-  "Real Protection.",
+  "Stress Alerts.",
+  "Confidence Builder.",
+  "Stress Relieving Suggestions.",
 ];
 
 export function TypingAnimation() {

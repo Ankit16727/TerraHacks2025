@@ -37,14 +37,6 @@ export default function Home() {
       {/* Divider */}
       <SectionDivider variant="default" />
 
-      {/* Phone Showcase Section */}
-      <section className="relative flex items-center justify-center">
-        <PhoneShowcase />
-      </section>
-
-      {/* Divider */}
-      <SectionDivider variant="dots" />
-
       {/* FAQ Section */}
       <section className="relative flex items-center justify-center">
         <FAQSection />

@@ -68,7 +68,7 @@ export function HeroSection() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 1.2 }}
           >
-            with Eve.
+            with Adam.
           </motion.p>
         </div>
 
@@ -78,8 +78,7 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.4 }}
         >
-          Building safer communities through connection, not fear. Every student
-          deserves to feel secure while exploring their campus and city.
+          Adam helps you find your voice. We analyze the emotions in your speech and offer real-time solutions to help you turn nervousness into confidence, so you can connect with others more authentically and confidently.
         </motion.p>
       </motion.div>
 
@@ -87,7 +86,7 @@ export function HeroSection() {
         <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-primary p-[2px] shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="relative rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-primary px-8 py-4 text-white transition-all duration-300 group-hover:from-primary/90 group-hover:via-sky-600/90 group-hover:to-primary/90">
             <span className="relative z-10 text-lg font-semibold">
-              Get Started Free
+              Get Started for Free
             </span>
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </div>
@@ -103,7 +102,7 @@ export function HeroSection() {
       >
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-green-500" />
-          <span>Trusted by students</span>
+          <span>Emotionally Intelligent</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-blue-500" />

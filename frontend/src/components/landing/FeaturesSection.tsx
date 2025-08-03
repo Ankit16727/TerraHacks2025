@@ -7,30 +7,30 @@ import { Users, Shield, MapPin, Heart } from "lucide-react";
 const features = [
   {
     icon: Users,
-    title: "Your Buddy's Got Your Back",
+    title: "A Partner in Every Conversation",
     description:
-      "Connect with trusted friends who can track your journey in real-time. No more 'made it home' texts, your buddies know you're safe.",
+      "Adam is your supportive ally, listening with empathy and helping you understand the emotions behind your words.",
     gradient: "from-blue-500/20 to-purple-500/20",
   },
   {
     icon: Shield,
-    title: "AI Guardian Always Watching",
+    title: "Your Confidence, Amplified",
     description:
-      "Our friendly AI companion checks in when you stop moving, providing an extra layer of care without being intrusive.",
+      "Our friendly AI provides gentle, real-time guidance to help you find your voice and articulate your thoughts with clarity.",
     gradient: "from-purple-500/20 to-pink-500/20",
   },
   {
     icon: MapPin,
-    title: "Community Glow Map",
+    title: "The Power of Connection",
     description:
-      "Discover the safest routes through community-shared insights. Light up paths for others and benefit from collective wisdom.",
+      "Meaningful connections start with honest communication. Adam helps you become a more present and effective communicator.",
     gradient: "from-green-500/20 to-blue-500/20",
   },
   {
     icon: Heart,
-    title: "Safety Through Connection",
+    title: "Check-ins, Made Better",
     description:
-      "Building trust and community, not fear. Every feature is designed to strengthen friendships while keeping everyone safe.",
+      "Every feature is designed helps you to recognize your emotions through speech, providing you with solutions to combat challenges in conversation.",
     gradient: "from-pink-500/20 to-red-500/20",
   },
 ];
@@ -61,8 +61,8 @@ export function FeaturesSection() {
           transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
         >
-          Eve isn't just another safety app. It's a community platform that
-          transforms how friends look out for each other on campus.
+          Adam isn't just another speech analyzer app. It's a community platform that
+          transforms how you understand your own mental health through subtle cues.
         </motion.p>
       </motion.div>
 
@@ -128,9 +128,9 @@ export function FeaturesSection() {
             transition={{ duration: 0.6, delay: 0.6 }}
             viewport={{ once: true }}
           >
-            Every feature in Eve is designed to strengthen the bonds between
-            friends while leveraging smart technology to keep everyone safe.
-            It's not about surveillance—it's about care, connection, and
+            Every feature in Adam is designed to strengthen the understanding of 
+            your mental health while leveraging smart technology to keep everyone safe.
+            It's not about conversation—it's about care, connection, and
             community.
           </motion.p>
         </div>

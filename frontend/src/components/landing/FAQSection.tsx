@@ -10,17 +10,17 @@ import {
 
 const faqs = [
   {
-    question: "How does Eve protect my privacy?",
+    question: "How does Adam protect my privacy?",
     answer:
       "Your privacy is our top priority. Location data is only shared with friends you explicitly choose, and all data is encrypted in transit. You have complete control over who can see your location and when. We automatically delete location history after 30 days and never sell your data to third parties.",
   },
   {
     question: "What happens if my phone dies during a walk?",
     answer:
-      "Eve is designed with this scenario in mind. Before your battery gets critically low, the app will automatically notify your selected buddy about your last known location and estimated arrival time. We also recommend sharing your planned route beforehand as an extra safety measure.",
+      "Adam is designed with this scenario in mind. Before your battery gets critically low, the app will automatically notify your selected buddy about your last known location and estimated arrival time. We also recommend sharing your planned route beforehand as an extra safety measure.",
   },
   {
-    question: "Can I use Eve without sharing my location?",
+    question: "Can I use Adam without sharing my location?",
     answer:
       "While location sharing is core to Eve's safety features, you can still use the Community Glow Map to discover safe routes and contribute to the community by adding pins about well-lit areas or concerns. However, the buddy tracking and AI Guardian features require location access to work effectively.",
   },
@@ -30,14 +30,14 @@ const faqs = [
       "The AI Guardian monitors your movement patterns during a guided walk. If you stop moving for an extended period or deviate significantly from your planned route, it will send you a gentle check-in notification. If you don't respond within a reasonable time, it alerts your chosen buddy with your last known location.",
   },
   {
-    question: "Is Eve free to use?",
+    question: "Is Adam free to use?",
     answer:
       "Yes! Eve's core safety features are completely free for all students. This includes buddy tracking, the AI Guardian, community map access, and emergency alerts. We believe campus safety should be accessible to everyone in the community.",
   },
   {
     question: "What if I don't have friends on campus yet?",
     answer:
-      "Eve is perfect for building those connections! You can start by using the Community Glow Map to find safe routes. As you meet people in classes or activities, you can gradually build your buddy network. The app also helps you discover study groups and campus events where you can meet like-minded people.",
+      "Adam is perfect for building those connections! You can start by using the Community Glow Map to find safe routes. As you meet people in classes or activities, you can gradually build your buddy network. The app also helps you discover study groups and campus events where you can meet like-minded people.",
   },
 ];
 
