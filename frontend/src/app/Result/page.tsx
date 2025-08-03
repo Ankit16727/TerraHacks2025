@@ -5,9 +5,20 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
+interface AnalysisResult {
+  transcript: string
+  adjusted_emotion: string
+  confidence: number
+  audio_features: {
+    pause_ratio: number
+    energy: number
+    tempo: number
+  }
+}
+
 export default function Result() {
   const [isLoading, setIsLoading] = useState(false)
-  const [transcript, setTranscript] = useState<string | null>(null)
+  const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -16,20 +27,20 @@ export default function Result() {
     if (dataParam) {
       try {
         const parsed = JSON.parse(dataParam)
-        setTranscript(parsed.transcript || "No transcript found.")
+        setAnalysisData(parsed)
       } catch (err) {
         console.error("Error parsing result data:", err)
-        setTranscript("Error loading transcript.")
       }
     }
   }, [searchParams])
 
   const handleContinue = () => {
     setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/chatbot") // Modify if you're sending more data later
-    }, 500)
+    // Store analysis data in localStorage before navigating
+    if (analysisData) {
+      localStorage.setItem('emotionalAnalysis', JSON.stringify(analysisData))
+    }
+    router.push("/Chatbot")
   }
 
   return (
@@ -52,7 +63,7 @@ export default function Result() {
           {/* Content Card */}
           <div className="bg-white/30 backdrop-blur-sm rounded-xl p-8 border border-white/40 shadow-lg">
             <p className="text-slate-700 text-center leading-relaxed text-base font-medium">
-              {transcript ? `${transcript}` : "Loading..."}
+              {analysisData?.transcript ? analysisData.transcript : "Loading..."}
             </p>
           </div>
 

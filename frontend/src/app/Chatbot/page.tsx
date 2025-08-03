@@ -25,17 +25,46 @@ export default function ChatbotPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, isBotTyping])
+  const [emotionalAnalysis, setEmotionalAnalysis] = useState<any>(null)
 
   useEffect(() => {
-    if (showChat) {
-      setTimeout(() => {
-        inputRef.current?.focus()
-      }, 500)
+    // Load emotional analysis data when component mounts
+    const savedAnalysis = localStorage.getItem('emotionalAnalysis')
+    if (savedAnalysis) {
+      const parsed = JSON.parse(savedAnalysis)
+      setEmotionalAnalysis(parsed)
+      
+      // Create initial welcome message based on emotion
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        text: generateWelcomeMessage(parsed.adjusted_emotion),
+        sender: "bot",
+        timestamp: new Date(),
+        emotion: parsed.adjusted_emotion,
+        confidence: parsed.confidence
+      }
+      setMessages([welcomeMessage])
+      setShowChat(true)
     }
-  }, [showChat])
+    
+    // Clean up
+    return () => {
+      localStorage.removeItem('emotionalAnalysis')
+    }
+  }, [])
+
+  const generateWelcomeMessage = (emotion: string) => {
+    const templates: {[key: string]: string} = {
+      "stress": "I notice you're feeling stressed. Let's work through this together. How long have you been feeling this way?",
+      "anxiety": "I can sense some anxiety. That's perfectly normal, and I'm here to help. Would you like to talk about what's causing these feelings?",
+      "sadness": "I understand you're feeling down. Your feelings are valid, and I'm here to listen. What's been on your mind?",
+      "anger": "I can tell you're frustrated. It's important to acknowledge these feelings. Would you like to tell me more about what's bothering you?",
+      "joy": "It's wonderful to hear the positivity in your voice! What's been making you feel this way?",
+      "neutral": "Thank you for sharing with me. I'm here to listen and support you. How are you feeling right now?"
+    }
+    
+    return templates[emotion.toLowerCase()] || templates.neutral
+  }
 
   const startRecording = async () => {
   try {
@@ -66,49 +95,54 @@ export default function ChatbotPage() {
         
         const result = await response.json()
         
-        // Add user message
-        const userMessage: Message = {
-          id: Date.now().toString(),
-          text: result.transcript,
-          sender: "user",
-          timestamp: new Date(),
-          emotion: result.adjusted_emotion,
-          confidence: result.confidence
+        const welcomeMessage: Message = {
+            id: Date.now().toString(),
+            text: result.welcome_message,
+            sender: "bot",
+            timestamp: new Date()
         }
-        setMessages(prev => [...prev, userMessage])
+        setMessages(prev => [...prev, welcomeMessage])
 
-        // Add bot message
+        // Play welcome audio
+        const welcomeAudio = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: result.welcome_message }),
+        })
+        
+        const welcomeBlob = await welcomeAudio.blob()
+        const welcomeSound = new Audio(URL.createObjectURL(welcomeBlob))
+        await welcomeSound.play()
+
+        // Wait for welcome message to finish
+        await new Promise(resolve => {
+            welcomeSound.onended = resolve
+        })
+
+        // Then add and play AI response
         const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: result.gemini_reply,
-          sender: "bot",
-          timestamp: new Date()
+            id: (Date.now() + 1).toString(),
+            text: result.gemini_reply,
+            sender: "bot",
+            timestamp: new Date()
         }
         setMessages(prev => [...prev, botMessage])
 
-        // Get audio response
-        const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "audio/mpeg",
-          },
-          body: JSON.stringify({ text: result.gemini_reply }),
+        const responseAudio = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/speak`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: result.gemini_reply }),
         })
         
-        if (!audioResponse.ok) {
-          throw new Error(`HTTP error! status: ${audioResponse.status}`)
-        }
-        
-        const audioBlob = await audioResponse.blob()
-        const audio = new Audio(URL.createObjectURL(audioBlob))
-        await audio.play()
+        const responseBlob = await responseAudio.blob()
+        const responseSound = new Audio(URL.createObjectURL(responseBlob))
+        await responseSound.play()
 
-      } catch (error) {
+    } catch (error) {
         console.error("Failed to analyze audio:", error)
-      }
-      setIsBotTyping(false)
     }
+    setIsBotTyping(false)
+}
     
     recorder.start()
     setIsRecording(true)
@@ -134,19 +168,18 @@ export default function ChatbotPage() {
     }
   }
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-      setShowChat(true)
-      const welcomeMessage: Message = {
-        id: Date.now().toString(),
-        text: "Hello! I'm here to help you. How are you feeling today? Feel free to speak or type what's on your mind.",
-        sender: "bot",
-        timestamp: new Date()
-      }
-      setMessages([welcomeMessage])
-    }, 1000)
+    // Remove setTimeout and directly set the states
+    setIsLoading(false)
+    setShowChat(true)
+    const welcomeMessage: Message = {
+      id: Date.now().toString(),
+      text: "Hello! I'm here to help you. How are you feeling today? Feel free to speak or type what's on your mind.",
+      sender: "bot",
+      timestamp: new Date()
+    }
+    setMessages([welcomeMessage])
   }
 
   const sendMessage = async () => {

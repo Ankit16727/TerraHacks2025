@@ -107,21 +107,34 @@ def analyze():
     # 4. Adjust using audio clues
     adjusted_emotion, flagged, reason = adjust_emotion_based_on_voice(text_emotion, audio_features)
 
-    # 5. Gemini
     prompt = f"""
-    The user said: \"{transcript}\"
+    The user said: "{transcript}"
 
-    Detected emotion: {adjusted_emotion}
-    Voice cues:
-    - Pause ratio: {audio_features['pause_ratio']:.2f}
-    - Energy: {audio_features['energy']:.2f}
-    - Tempo: {audio_features['tempo']:.1f}
+    Emotional Analysis:
+    - Primary emotion: {adjusted_emotion}
+    - Confidence: {text_emotion['score']:.2%}
+    - Voice indicators:
+      * Pause ratio: {audio_features['pause_ratio']:.2f} (higher values suggest hesitation/anxiety)
+      * Energy level: {audio_features['energy']:.2f} (lower values might indicate low mood)
+      * Speech tempo: {audio_features['tempo']:.1f} (faster tempo could indicate stress/anxiety)
+    
+    You are an empathetic mental health assistant. Based on this emotional analysis:
+    1. First, provide a warm, understanding acknowledgment of their emotional state (1 sentence)
+    2. Then, expand with specific observations about their voice and emotional indicators
+    3. Finally, suggest a tailored coping strategy for their detected {adjusted_emotion}
 
-    Respond like a real person who cares deeply.
-    Briefly acknowledge what the user is feeling, then gently suggest one small thing that could help them feel better. Be warm and conversational.
+    Keep the response natural and conversational. Split your response into two parts:
+    INITIAL_RESPONSE: A warm, immediate acknowledgment (1 sentence)
+    DETAILED_RESPONSE: The deeper insights and coping strategy (2-3 sentences)
     """
 
-    gemini_reply = genai.GenerativeModel('models/gemini-2.5-pro').generate_content(prompt).text
+    # Get AI response with split format
+    gemini_response = genai.GenerativeModel('models/gemini-2.5-pro').generate_content(prompt).text
+    
+    # Split the response into initial and detailed parts
+    response_parts = gemini_response.split("DETAILED_RESPONSE:")
+    initial_response = response_parts[0].replace("INITIAL_RESPONSE:", "").strip()
+    detailed_response = response_parts[1].strip() if len(response_parts) > 1 else ""
 
     result = {
         "transcript": transcript,
@@ -131,9 +144,10 @@ def analyze():
         "flagged_by_voice": flagged,
         "adjustment_reason": reason,
         "audio_features": audio_features,
-        "gemini_reply": gemini_reply
+        "welcome_message": initial_response,  # Use Gemini's initial response as welcome
+        "gemini_reply": detailed_response,    # Use the detailed part as main reply
     }
-
+    
     save_analysis(result, user_id="default_user")
 
     if os.path.exists(audio_path):
@@ -157,13 +171,6 @@ def history():
         } for item in history
     ]
     return jsonify(response)
-
-
-@app.route("/elevenlabs", methods=["POST"])
-def elevenlabs_tts():
-    get_elevenlabs_audio("Hi, I'm Evelyn. I'm here to help you feel better.")
-    playsound("elevenlabs.wav")
-    return jsonify({"status": "played"})
 
 if __name__ == "__main__":
     os.makedirs("audio", exist_ok=True)
