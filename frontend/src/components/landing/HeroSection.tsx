@@ -82,7 +82,6 @@ export function HeroSection() {
         </motion.p>
       </motion.div>
 
-      <Link href="/sign-in">
         <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-primary p-[2px] shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="relative rounded-2xl bg-gradient-to-r from-primary via-sky-600 to-primary px-8 py-4 text-white transition-all duration-300 group-hover:from-primary/90 group-hover:via-sky-600/90 group-hover:to-primary/90">
             <Link href="/Recorder"
@@ -92,7 +91,6 @@ export function HeroSection() {
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </div>
         </div>
-      </Link>
 
       {/* Trust indicators */}
       <motion.div

@@ -37,9 +37,7 @@ export function Footer() {
               </h3>
             </div>
             <p className="mb-4 max-w-md text-sm leading-relaxed text-foreground/70">
-              Your personal campus beacon. Building safer communities through
-              connection, not fear. Every student deserves to feel secure while
-              exploring their campus and city.
+              Feeling nervous or unsure in a conversation? Adam is your real-time coach, providing the solutions you need to overcome any communication challenge and speak with the confidence you've always wanted.
             </p>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-xs text-foreground/60">
@@ -60,19 +58,19 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-foreground/70">
               <li className="flex items-center gap-2">
                 <Users className="h-3 w-3 text-primary" />
-                <span>Buddy System</span>
+                <span>Conversation AI</span>
               </li>
               <li className="flex items-center gap-2">
                 <Shield className="h-3 w-3 text-primary" />
-                <span>AI Guardian</span>
+                <span>Breathing Techniques</span>
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="h-3 w-3 text-primary" />
-                <span>Community Map</span>
+                <span>Support Services</span>
               </li>
               <li className="flex items-center gap-2">
                 <Heart className="h-3 w-3 text-primary" />
-                <span>Emergency Alerts</span>
+                <span>Stress Alerts</span>
               </li>
             </ul>
           </motion.div>
