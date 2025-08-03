@@ -13,6 +13,7 @@ import google.generativeai as genai
 from playsound import playsound
 from database import save_analysis, get_user_history
 from emotion_utils import extract_audio_features, adjust_emotion_based_on_voice
+from twilio.rest import Client
 
 load_dotenv()
 app = Flask(__name__)
@@ -171,6 +172,27 @@ def history():
         } for item in history
     ]
     return jsonify(response)
+
+@app.route("/call-alert", methods=["POST"])
+def call_alert():
+    data = request.get_json()
+    transcript = data.get("transcript", "The user expressed distress.")
+
+    try:
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        client = Client(account_sid, auth_token)
+
+        call = client.calls.create(
+            twiml=f'<Response><Say voice="alice">{transcript}</Say></Response>',
+            from_=os.getenv("TWILIO_PHONE_NUMBER"),
+            to=os.getenv("TRUSTED_CONTACT_NUMBER")
+        )
+
+        return jsonify({"status": "success", "sid": call.sid})
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
     os.makedirs("audio", exist_ok=True)

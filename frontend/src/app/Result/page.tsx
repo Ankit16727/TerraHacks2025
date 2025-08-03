@@ -34,13 +34,38 @@ export default function Result() {
     }
   }, [searchParams])
 
-  const handleContinue = () => {
-    setIsLoading(true)
-    // Store analysis data in localStorage before navigating
-    if (analysisData) {
-      localStorage.setItem('emotionalAnalysis', JSON.stringify(analysisData))
+  const handleContinue = async () => {
+  setIsLoading(true)
+
+  if (analysisData) {
+    localStorage.setItem('emotionalAnalysis', JSON.stringify(analysisData))
+    // Check if emotion is severe
+    if (analysisData.adjusted_emotion === "deep sadness or burnout") {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/call-alert`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transcript: analysisData.transcript || "The user expressed signs of severe emotional distress."
+          })
+        })
+
+        const result = await response.json()
+        if (result.status === "success") {
+          console.log("Call placed successfully. SID:", result.sid)
+        } else {
+          console.error("Call failed:", result.message)
+        }
+      } catch (err) {
+        console.error("Error calling contact:", err)
+      }
     }
+
+    // Proceed to chatbot
     router.push("/Chatbot")
+    }else {
+      setIsLoading(false)
+    }
   }
 
   return (

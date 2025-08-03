@@ -28,7 +28,7 @@ def adjust_emotion_based_on_voice(text_emotion, audio_features):
     reason = ""
 
     high_pause = audio_features['pause_ratio'] > 0.6
-    low_energy = audio_features['energy'] < 0.02
+    low_energy = audio_features['energy'] < 0.03
     slow_tempo = audio_features['tempo'] < 90
 
     if label in ["joy", "neutral"] and (high_pause or low_energy or slow_tempo):
